@@ -6,6 +6,7 @@ import { FacilitiesSection } from "@/components/facilities-section"
 import { SupportersSection } from "@/components/supporters-section"
 import { SocialSidebar } from "@/components/social-sidebar"
 import { MarqueeAnnouncement } from "@/components/marquee-announcement"
+import { HeroCarousel } from "@/components/hero-carousel"
 
 export default function Home() {
   return (
@@ -33,13 +34,13 @@ export default function Home() {
       {/* Header with Logo and Title */}
       <header className="w-full bg-gradient-to-r from-green-300 via-yellow-100 to-green-300 py-4">
         <div className="container mx-auto flex justify-between items-center px-4">
-          <Image src="/army-logo.png" alt="Indian Army Logo" width={80} height={80} />
+          <Image src="/indianarmylogo.png" alt="Indian Army Logo" width={80} height={80} />
           <div className="text-center">
-            <h1 className="text-xl md:text-2xl font-bold text-[#004d00]">Directorate of Indian Army</h1>
-            <h1 className="text-xl md:text-2xl font-bold text-[#004d00]">Veterans</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-[#004d00]">Indian Army Veteran Node Headquaters Dakshin Command</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-[#004d00]">Pune</h1>
             <p className="text-sm italic">(Taking Care of Our Own No Matter What...!)</p>
           </div>
-          <Image src="/diav-logo.png" alt="DIAV Logo" width={80} height={80} />
+          <Image src="/fav.png" alt="SouthernCommand Logo" width={80} height={80} />
         </div>
       </header>
 
@@ -92,9 +93,9 @@ export default function Home() {
             <Link href="/links" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
               Links
             </Link>
-            <Link href="/vsk" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
+            {/* <Link href="/vsk" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
               VSK+
-            </Link>
+            </Link> */}
             <Link href="/contact" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
               Contact us
             </Link>
@@ -110,80 +111,84 @@ export default function Home() {
         {/* Social Media Sidebar */}
         <SocialSidebar />
 
-        <div className="flex flex-col lg:flex-row">
-          {/* Main Content Area - 75% width on large screens */}
-          <div className="w-full lg:w-3/4">
-            {/* Hero Section */}
-            <div className="relative">
-              <Image
-                src="/hero-image.jpg"
-                alt="Indian Army Veterans"
-                width={1200}
-                height={500}
-                className="w-full h-[400px] object-cover"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <h2 className="text-white text-3xl md:text-4xl font-bold text-center drop-shadow-lg">
-                  We Pride in Taking Care of Our Own
-                </h2>
-              </div>
-            </div>
+        <div className="container mx-auto px-4 py-8">
+          {/* Add the carousel here */}
 
-            {/* Facilities Section */}
-            <div className="mt-8 container mx-auto px-4">
-              <FacilitiesSection />
-            </div>
-
-            {/* Supporters Section */}
-            <div className="mt-8 container mx-auto px-4">
-              <SupportersSection />
-            </div>
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Main content area */}
+            <div className="w-full lg:w-3/4">
+              {/* Hero Section */}
+          <div className="mb-8">
+            <HeroCarousel />
           </div>
 
-          {/* Right Sidebar - 25% width on large screens */}
-          <div className="w-full lg:w-1/4 bg-white shadow-md">
-            <div className="bg-[#f0ad4e] text-white p-2 font-bold">Search</div>
-            <div className="p-3 border-b">
-              <div className="relative">
-                <Input type="text" placeholder="Search PDF" className="pr-8" />
-                <button className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <Search className="h-4 w-4" />
-                </button>
+              {/* <div className="relative">
+                <Image
+                  src="/img-carosoul1.png"
+                  alt="Indian Army Veterans"
+                  width={1200}
+                  height={500}
+                  className="w-full h-[400px] object-cover"
+                /> */}
+              {/* </div> */}
+
+              {/* Facilities Section */}
+              <div className="mt-8 container mx-auto px-4">
+                <FacilitiesSection />
+              </div>
+
+              {/* Supporters Section */}
+              <div className="mt-8 container mx-auto px-4">
+                <SupportersSection />
               </div>
             </div>
 
-            <div className="bg-[#f0ad4e] text-white p-2 font-bold">Latest Updates</div>
-            <div className="p-3 bg-[#004d00] text-white">
-              <ul className="space-y-2">
-                <li className="flex items-start gap-1">
-                  <span>➤</span>
-                  <Link href="/sparsh-login" className="hover:underline">
-                    SPARSH Login
-                  </Link>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span>➤</span>
-                  <Link href="/check-sparsh-status" className="hover:underline">
-                    Check SPARSH Status
-                  </Link>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span>➤</span>
-                  <Link href="/vsk-login" className="hover:underline">
-                    VSK Login
-                  </Link>
-                </li>
-                <li className="flex items-start gap-1">
-                  <span>➤</span>
-                  <p className="text-sm">
-                    To prevent stoppage of pension, please ensure you have submitted your life certificate
-                  </p>
-                </li>
-              </ul>
-            </div>
+            {/* Right sidebar */}
+            <div className="w-full lg:w-1/4 bg-white shadow-md h-fit">
+              {/* Search and other sidebar content */}
+              <div className="bg-[#f0ad4e] text-white p-2 font-bold text-center">Search</div>
+              <div className="p-3 border-b">
+                <div className="relative">
+                  <Input type="text" placeholder="Search PDF" className="pr-8" />
+                  <button className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <Search className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
 
-            <div className="p-3 flex justify-center">
-              <Image src="/qr-code.png" alt="QR Code" width={200} height={200} />
+              <div className="bg-[#f0ad4e] text-white p-2 font-bold text-center">Latest Updates</div>
+              <div className="p-3 bg-[#004d00] text-white">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-1">
+                    <span>➤</span>
+                    <Link href="/sparsh-login" className="hover:underline">
+                      SPARSH Login
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span>➤</span>
+                    <Link href="/check-sparsh-status" className="hover:underline">
+                      Check SPARSH Status
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span>➤</span>
+                    <Link href="/vsk-login" className="hover:underline">
+                      VSK Login
+                    </Link>
+                  </li>
+                  <li className="flex items-start gap-1">
+                    <span>➤</span>
+                    <p className="text-sm">
+                      To prevent stoppage of pension, please ensure you have submitted your life certificate
+                    </p>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="p-3 flex justify-center">
+                <Image src="/qr-code.png" alt="QR Code" width={150} height={150} />
+              </div>
             </div>
           </div>
         </div>
@@ -194,9 +199,9 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center md:items-start">
-              <Image src="/diav-logo.png" alt="DIAV Logo" width={80} height={80} className="mb-4" />
-              <p className="text-sm">Directorate of Indian Army Veterans (DIAV),</p>
-              <p className="text-sm">104 Cavalry Road, Middle Lane, Delhi Cantt - 110010</p>
+              <Image src="/fav.png" alt="DIAV Logo" width={80} height={80} className="mb-4" />
+              <p className="text-sm">Indian Army Veterans Node, Headquaters Dakshin Command, Pune</p>
+              <p className="text-sm">104 Cavalry Road, Middle Lane, Pune Cantt - 411010</p>
               <p className="text-sm mt-2">
                 <span>👨‍✈️ Service Pensioner Helpline: 01125664200,</span>
                 <br />
@@ -296,11 +301,11 @@ export default function Home() {
               <h3 className="text-lg font-bold mb-4 text-center md:text-left">Opening Hours</h3>
               <div className="space-y-4 text-sm">
                 <div>
-                  <p className="text-yellow-400">MONDAY - FRIDAY</p>
-                  <p>09:00 AM - 05:30 PM</p>
+                  <p className="text-yellow-400">MONDAY - SATURDAY</p>
+                  <p>09:30 AM - 04:30 PM</p>
                 </div>
                 <div>
-                  <p className="text-yellow-400">Saturday - Sunday</p>
+                  <p className="text-yellow-400">Sunday</p>
                   <p className="bg-[#f0ad4e] text-black inline-block px-2 py-1 rounded">CLOSED</p>
                 </div>
                 <div>
@@ -315,7 +320,7 @@ export default function Home() {
           </div>
 
           <div className="mt-8 pt-4 border-t border-gray-700 text-center text-xs">
-            <p>©2023 Copyright DIAV. All Rights Reserved. Design & Developed by ECHS.</p>
+            <p>©2023 Copyright VMS. All Rights Reserved. Design & Developed by X-Softwares.</p>
             <div className="mt-2 flex justify-center gap-4">
               <Link href="/terms" className="hover:underline">
                 Terms & Conditions

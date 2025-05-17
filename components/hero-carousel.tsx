@@ -9,13 +9,13 @@ import { cn } from "@/lib/utils"
 const slides = [
   {
     id: 1,
-    image: "/hero-1.jpg",
+    image: "/img-carosoul1.png",
     title: "Serving Those Who Served the Nation",
     description: "Supporting Indian Army Veterans with comprehensive welfare services and benefits",
   },
   {
     id: 2,
-    image: "/hero-2.jpg",
+    image: "/indianarmylogo.png",
     title: "Pension & Benefits Information",
     description: "Access the latest updates on pension schemes and veteran benefits",
   },
