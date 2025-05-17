@@ -112,40 +112,16 @@ export default function Home() {
         <SocialSidebar />
 
         <div className="container mx-auto px-4 py-8">
-          {/* Add the carousel here */}
-
+          {/* Side by side layout */}
           <div className="flex flex-col lg:flex-row gap-6">
-            {/* Main content area */}
+            {/* Left side - Carousel (75% width) */}
             <div className="w-full lg:w-3/4">
-              {/* Hero Section */}
-          <div className="mb-8">
-            <HeroCarousel />
-          </div>
-
-              {/* <div className="relative">
-                <Image
-                  src="/img-carosoul1.png"
-                  alt="Indian Army Veterans"
-                  width={1200}
-                  height={500}
-                  className="w-full h-[400px] object-cover"
-                /> */}
-              {/* </div> */}
-
-              {/* Facilities Section */}
-              <div className="mt-8 container mx-auto px-4">
-                <FacilitiesSection />
-              </div>
-
-              {/* Supporters Section */}
-              <div className="mt-8 container mx-auto px-4">
-                <SupportersSection />
-              </div>
+              <HeroCarousel />
             </div>
 
-            {/* Right sidebar */}
+            {/* Right side - Search and updates (25% width) */}
             <div className="w-full lg:w-1/4 bg-white shadow-md h-fit">
-              {/* Search and other sidebar content */}
+              {/* Search section */}
               <div className="bg-[#f0ad4e] text-white p-2 font-bold text-center">Search</div>
               <div className="p-3 border-b">
                 <div className="relative">
@@ -156,6 +132,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Latest Updates section */}
               <div className="bg-[#f0ad4e] text-white p-2 font-bold text-center">Latest Updates</div>
               <div className="p-3 bg-[#004d00] text-white">
                 <ul className="space-y-2">
@@ -190,6 +167,15 @@ export default function Home() {
                 <Image src="/qr-code.png" alt="QR Code" width={150} height={150} />
               </div>
             </div>
+          </div>
+          
+          {/* After the carousel and sidebar, add your facility and supporters sections */}
+          <div className="mt-8">
+            <FacilitiesSection />
+          </div>
+
+          <div className="mt-8">
+            <SupportersSection />
           </div>
         </div>
       </main>
