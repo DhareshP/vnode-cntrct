@@ -1,4 +1,4 @@
-# Indian army veterans clone
+# Indian army veterans 
 
 *Automatically synced with your [v0.dev](https://v0.dev) deployments*
 
