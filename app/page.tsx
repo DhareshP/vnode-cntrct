@@ -7,7 +7,7 @@ import { SupportersSection } from "@/components/supporters-section"
 import { SocialSidebar } from "@/components/social-sidebar"
 import { MarqueeAnnouncement } from "@/components/marquee-announcement"
 import { HeroCarousel } from "@/components/hero-carousel"
-import {Header} from "@/components/header"
+import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 
 

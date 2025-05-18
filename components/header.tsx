@@ -87,9 +87,9 @@ export function Header() {
                         <Link href="/links" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
                             Links
                         </Link>
-                        {/* <Link href="/vsk" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
-                              VSK+
-                            </Link> */}
+                        <Link href="/veteran/register" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
+                            VeteranRegistrationForm
+                            </Link>
                         <Link href="/contact" className="p-3 text-gray-700 hover:text-[#004d00] hover:bg-gray-100">
                             Contact us
                         </Link>
