@@ -9,7 +9,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Image src="/logo.png" alt="Indian Army Veterans Logo" width={40} height={40} className="h-10 w-auto" />
+              <Image src="/fav.png" alt="Indian Army Veterans Logo" width={40} height={40} className="h-10 w-auto" />
               <span className="font-bold text-lg">Indian Army Veterans</span>
             </div>
             <p className="text-slate-300 mb-4">

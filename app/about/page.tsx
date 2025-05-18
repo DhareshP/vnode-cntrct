@@ -1,81 +1,26 @@
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Footer } from "@/components/footer"
-import { MainNav } from "@/components/main-nav"
-import Link from "next/link"
 import Image from "next/image"
-import { ChevronRight, Home, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { MobileNav } from "@/components/mobile-nav"
+import {Header} from "@/components/header"
 
 export default function AboutPage() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background">
-        <div className="container flex h-16 items-center">
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="mr-2">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="pr-0">
-                <MobileNav />
-              </SheetContent>
-            </Sheet>
-          </div>
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Indian Army Veterans Logo" width={40} height={40} className="h-8 w-auto" />
-            <span className="hidden font-bold sm:inline-block">Indian Army Veterans</span>
-          </Link>
-          <div className="flex flex-1 items-center justify-end md:justify-between">
-            <MainNav className="hidden md:flex" />
-            <div className="flex items-center gap-2">
-              <Button size="sm" className="hidden md:flex">
-                Login
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
-        <div className="container py-6">
-          <Breadcrumb className="mb-6">
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">
-                  <Home className="h-4 w-4 mr-1" />
-                  Home
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator>
-                <ChevronRight className="h-4 w-4" />
-              </BreadcrumbSeparator>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/about">About Us</BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
-          <h1 className="text-3xl font-bold tracking-tight mb-6">About Us</h1>
+        <div className="flex min-h-screen flex-col">
+          {/* Top Bar with Helpline Info */}
+          <Header />
+          <main className="container mx-auto flex-1 py-8 space-y-6">
+            <h1 className="text-3xl font-bold tracking-tight">About Us</h1>
 
           <Tabs defaultValue="overview" className="mb-8">
+            {/* ... rest of tabs as before ... */}
             <TabsList className="mb-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="history">History</TabsTrigger>
               <TabsTrigger value="organization">Organization</TabsTrigger>
               <TabsTrigger value="leadership">Leadership</TabsTrigger>
             </TabsList>
+            {/* TabsContent blocks here */}
             <TabsContent value="overview">
               <Card>
                 <CardHeader>
@@ -243,9 +188,10 @@ export default function AboutPage() {
               </Card>
             </TabsContent>
           </Tabs>
+          </main>
+
+          <Footer />
         </div>
-      </main>
-      <Footer />
-    </div>
-  )
-}
+    )
+  }
+
