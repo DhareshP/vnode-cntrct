@@ -6,16 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="136ea522-aa80-43e4-8e66-4e7bb682d210" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/AddressInfoStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/ChildDetailsStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/FormStepWrapper.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/MartyrInfoStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/PersonalInfoStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/ReviewStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/components/ServiceInfoStep.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/veteran/register/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/veteran/register/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/services/VeteranService.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/services/VeteranService.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +77,7 @@
       <workItem from="1747656455117" duration="1095000" />
       <workItem from="1747659210713" duration="1126000" />
       <workItem from="1747660447007" duration="6467000" />
-      <workItem from="1747668737100" duration="1242000" />
+      <workItem from="1747668737100" duration="2437000" />
     </task>
     <servers />
   </component>
