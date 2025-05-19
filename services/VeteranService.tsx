@@ -85,6 +85,19 @@ export const getAwards = async () => {
     }
 };
 
+// Fix for the API function in VeteranService.tsx
+export const getRequiredFieldsByVeteranType = async (veteranType: string) => {
+    try {
+        // Using the proper endpoint format
+        const res = await axios.get(`${API_BASE}/fields`,{
+            params: { veteranType }
+        });
+        return res.data;
+    } catch (error) {
+        console.error("Error fetching required fields for veteran type:", error);
+        throw error;
+    }
+};
 // Default export (for older usage)
 const VeteranService = {
     getFilteredVeterans,
@@ -94,6 +107,7 @@ const VeteranService = {
     getVeteranTypes,
     createVeteran,
     getAwards,
+    getRequiredFieldsByVeteranType,
 };
 
 export default VeteranService;

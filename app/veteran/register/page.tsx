@@ -1,838 +1,493 @@
 "use client"
 
-import type React from "react"
-
-import { useEffect, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from "react"
+import { useState, useEffect, useMemo, useCallback, useReducer } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Alert } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
-import { useIsMobile } from "@/hooks/use-mobile"
-import veteranService from "@/services/VeteranService"
-import rankService from "@/services/RankService"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import veteranService from "@/services/VeteranService"
+import rankService from "@/services/RankService"
 
-const initialForm = {
-  serviceNumber: "",
-  services: "",
-  category: "",
-  veteranType: "",
-  district: "",
-  rank: "",
-  regiment: "",
-  unit: "",
-  award: "",
-  dateOfCommissioning: "",
-  dateOfRetirement: "",
-  firstName: "",
-  middleName: "",
-  lastName: "",
-  dateOfBirth: "",
-  age: "",
-  mobileNumber: "",
-  email: "",
-  presentAddress: "",
-  presentCity: "",
-  presentDistrict: "",
-  presentState: "",
-  presentPostOffice: "",
-  presentPoliceStation: "",
-  presentPinCode: "",
-  isPermanentAddressSameAsPresent: false,
-  permanentAddress: "",
-  permanentCity: "",
-  permanentDistrict: "",
-  permanentState: "",
-  permanentPostOffice: "",
-  permanentPoliceStation: "",
-  permanentPinCode: "",
-  veerNariName: "",
-  veerNariMobileNumber: "",
-  yearOfMartydom: "",
-  placeOfMartydom: "",
-  children: [] as any[],
+// Types
+interface FieldCategory {
+  category: string
+  fields: string[]
 }
 
-const initialEnums = {
-  categories: [] as string[],
-  services: [] as string[],
-  districts: [] as string[],
-  veteranTypes: [] as string[],
-  ranks: [] as string[],
-  regiments: [] as string[],
-  awards: [] as string[],
+type FormState = Record<string, any>
+
+type Action =
+    | { type: "SET_FIELD"; payload: { field: string; value: any } }
+    | { type: "INIT_FIELDS"; payload: { categories: FieldCategory[] } }
+    | { type: "RESET" }
+
+// Reducer for form state
+function formReducer(state: FormState, action: Action): FormState {
+  switch (action.type) {
+    case "SET_FIELD": {
+      const { field, value } = action.payload
+      if (field.includes(".")) {
+        const [parent, child] = field.split('.')
+        return {
+          ...state,
+          [parent]: { ...(state[parent] || {}), [child]: value }
+        }
+      }
+      return { ...state, [field]: value }
+    }
+
+    case "INIT_FIELDS": {
+      const { categories } = action.payload
+      const newState: FormState = { ...state }
+
+      categories.forEach(cat => {
+        cat.fields.forEach(field => {
+          if (field.includes('.')) {
+            const [parent, child] = field.split('.')
+            if (!newState[parent]) newState[parent] = {}
+            if (newState[parent][child] === undefined) newState[parent][child] = ''
+          } else if (field === 'children') {
+            if (!newState.children) newState.children = []
+          } else if (['isPermanentAddressSameAsPresent','battleCasualty'].includes(field)) {
+            if (newState[field] === undefined) newState[field] = false
+          } else if (newState[field] === undefined) {
+            newState[field] = ''
+          }
+        })
+      })
+
+      return newState
+    }
+
+    case "RESET":
+      return {}
+
+    default:
+      return state
+  }
 }
 
 export default function RegisterPage() {
   const { toast } = useToast()
-  const isMobile = useIsMobile()
-  const [activeStep, setActiveStep] = useState(0)
-  const [submitStatus, setSubmitStatus] = useState<{ success: boolean; error: boolean; message: string }>({
-    success: false,
-    error: false,
-    message: "",
+  const [submitStatus, setSubmitStatus] = useState({ success: false, error: false, message: '' })
+
+  // Form reducer
+  const [form, dispatch] = useReducer(formReducer, {})
+
+  // Fetch veteran types
+  const { data: veteranTypes = [], isLoading: loadingTypes } = useQuery<string[]>({
+    queryKey: ["veteranTypes"],
+    queryFn: () => veteranService.getVeteranTypes(),
   })
-  const [form, setForm] = useState(initialForm)
-  const [enums, setEnums] = useState(initialEnums)
-  const [loading, setLoading] = useState(true)
 
+  // Fetch services enum
+  const { data: services = [] } = useQuery<string[]>({
+    queryKey: ["services"],
+    queryFn: () => veteranService.getServices(),
+  })
 
+  // Fetch categories enum
+  const { data: categories = [] } = useQuery<string[]>({
+    queryKey: ["categories"],
+    queryFn: () => veteranService.getCategories(),
+  })
+
+  // Fetch awards enum
+  const { data: awards = [] } = useQuery<string[]>({
+    queryKey: ["awards"],
+    queryFn: () => veteranService.getAwards(),
+  })
+
+  // Fetch ranks based on selected service and category
+  const { data: ranks = [] } = useQuery<string[]>({
+    queryKey: ["ranks", form.services, form.category],
+    queryFn: () => rankService.getRanks(form.services, form.category),
+    enabled: !!form.services && !!form.category
+  })
+
+  // Fetch regiments based on selected service
+  const { data: regiments = [] } = useQuery<string[]>({
+    queryKey: ["regiments", form.services],
+    queryFn: () => rankService.getRegiments(form.services),
+    enabled: !!form.services
+  })
+
+  // Fetch units based on selected regiment
+  const { data: units = [] } = useQuery<string[]>({
+    queryKey: ["units", form.services, form.regiment],
+    queryFn: () => fetch(`/api/units?service=${form.services}&regiment=${form.regiment}`)
+        .then(res => res.json()),
+    enabled: !!form.services && !!form.regiment
+  })
+
+  // Fetch states (use the existing districts method which likely returns states too)
+  const { data: states = [] } = useQuery<string[]>({
+    queryKey: ["states"],
+    queryFn: () => veteranService.getDistricts(), // Assuming this returns states
+  })
+
+  // Fetch districts enum (based on selected state) - using direct fetch since method is missing
+  const { data: presentDistricts = [] } = useQuery<string[]>({
+    queryKey: ["districts", form.presentState],
+    queryFn: () => fetch(`/api/districts?state=${form.presentState}`)
+        .then(res => res.json()),
+    enabled: !!form.presentState
+  })
+
+  const { data: permanentDistricts = [] } = useQuery<string[]>({
+    queryKey: ["districts", form.permanentState],
+    queryFn: () => fetch(`/api/districts?state=${form.permanentState}`)
+        .then(res => res.json()),
+    enabled: !!form.permanentState
+  })
+
+  // Fetch required fields when type selected
+  const { data: fieldCategories = [], isFetching: loadingFields } = useQuery<FieldCategory[]>({
+    queryKey: ["fields", form.veteranType],
+    queryFn: () => veteranService.getRequiredFieldsByVeteranType(form.veteranType!),
+    enabled: !!form.veteranType,
+  })
+
+  // Handle field categories update
   useEffect(() => {
-    async function fetchEnums() {
-      try {
-        setLoading(true)
-        const [categories, services, districts, veteranTypes, awards] = await Promise.all([
-          veteranService.getCategories(),
-          veteranService.getServices(),
-          veteranService.getDistricts(),
-          veteranService.getVeteranTypes(),
-          veteranService.getAwards(),
-        ])
-        setEnums((prev) => ({ ...prev, categories, services, districts, veteranTypes, awards }))
-      } catch (error) {
-        setSubmitStatus({
-          success: false,
-          error: true,
-          message: "Failed to load form data. Please refresh the page.",
-        })
-      } finally {
-        setLoading(false)
-      }
+    if (fieldCategories && fieldCategories.length > 0) {
+      dispatch({ type: 'INIT_FIELDS', payload: { categories: fieldCategories } })
     }
-    fetchEnums()
+  }, [fieldCategories])
+
+  const requiredFields = useMemo(
+      () => fieldCategories ? fieldCategories.flatMap((c: FieldCategory) => c.fields) : [],
+      [fieldCategories]
+  )
+
+  // Handlers
+  const setField = useCallback((field: string, value: any) => {
+    dispatch({ type: 'SET_FIELD', payload: { field, value } })
   }, [])
 
+  // Handle permanent address checkbox
   useEffect(() => {
-    if (form.services) {
-      setForm((prev) => ({ ...prev, regiment: "" }))
-      fetchRegiments(form.services)
+    if (form.isPermanentAddressSameAsPresent) {
+      setField('permanentAddress', form.presentAddress || '')
+      setField('permanentCity', form.presentCity || '')
+      setField('permanentState', form.presentState || '')
+      setField('permanentDistrict', form.presentDistrict || '')
+      setField('permanentPostOffice', form.presentPostOffice || '')
+      setField('permanentPoliceStation', form.presentPoliceStation || '')
+      setField('permanentPinCode', form.presentPinCode || '')
     }
-    // eslint-disable-next-line
-  }, [form.services])
+  }, [form.isPermanentAddressSameAsPresent, form.presentAddress, form.presentCity, form.presentState,
+    form.presentDistrict, form.presentPostOffice, form.presentPoliceStation, form.presentPinCode, setField])
 
-  const fetchRegiments = async (service: string) => {
+  const handleSubmit = useCallback(async () => {
     try {
-      setLoading(true)
-      const regiments = await rankService.getRegiments(service)
-      setEnums((prev) => ({ ...prev, regiments }))
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    async function fetchRanks() {
-      if (form.services && form.category) {
-        try {
-          setLoading(true)
-          const ranks = await rankService.getRanks(form.services, form.category)
-          setEnums((prev) => ({ ...prev, ranks }))
-        } catch {
-          // ignore
-        } finally {
-          setLoading(false)
-        }
+      if (!form.veteranType) {
+        toast({ title: 'Validation', description: 'Select a veteran type', variant: 'destructive' })
+        return
       }
-    }
-    fetchRanks()
-    // eslint-disable-next-line
-  }, [form.services, form.category])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleRemoveChild = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      children: prev.children.filter((_, idx) => idx !== index)
-    }));
-  }
-
-  const handleCheckboxChange = (checked: boolean, name: string) => {
-    setForm((prev) => {
-      const updated = { ...prev, [name]: checked }
-      if (name === "isPermanentAddressSameAsPresent") {
-        if (checked) {
-          updated.permanentAddress = prev.presentAddress
-          updated.permanentCity = prev.presentCity
-          updated.permanentDistrict = prev.presentDistrict
-          updated.permanentState = prev.presentState
-          updated.permanentPostOffice = prev.presentPostOffice
-          updated.permanentPoliceStation = prev.presentPoliceStation
-          updated.permanentPinCode = prev.presentPinCode
+      const payload: any = {}
+      requiredFields.forEach(f => {
+        if (f.includes('.')) {
+          const [p, c] = f.split('.')
+          payload[p] = { ...(payload[p] || {}), [c]: form[p]?.[c] || '' }
         } else {
-          updated.permanentAddress = ""
-          updated.permanentCity = ""
-          updated.permanentDistrict = ""
-          updated.permanentState = ""
-          updated.permanentPostOffice = ""
-          updated.permanentPoliceStation = ""
-          updated.permanentPinCode = ""
+          payload[f] = form[f] ?? ''
         }
-      }
-      return updated
-    })
-  }
+      })
 
-  const handleAddChild = () => {
-    setForm((prev) => ({
-      ...prev,
-      children: [
-        ...prev.children,
-        {
-          childName: "",
-          childRelation: "",
-          childDateOfBirth: "",
-          childAge: "",
-          childEducationQualification: "",
-        },
-      ],
-    }))
-  }
-
-  const handleChildChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setForm((prev) => {
-      const updatedChildren = prev.children.map((child, idx) => (idx === index ? { ...child, [name]: value } : child))
-      return { ...prev, children: updatedChildren }
-    })
-  }
-
-  const handleNext = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setActiveStep((prev) => prev + 1)
-    // Remove automatic scrolling to top
-  }
-
-  const handleBack = (e: ReactMouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setActiveStep((prev) => prev - 1)
-    // Remove automatic scrolling to top
-  }
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    try {
-      setLoading(true)
-      await veteranService.createVeteran(form)
-      setSubmitStatus({ success: true, error: false, message: "Registration successful!" })
-      toast({ title: "Success", description: "Registration successful!" })
-      window.scrollTo(0, 0)
+      await veteranService.createVeteran(payload)
+      toast({ title: 'Success', description: 'Registered!', variant: 'default' })
+      setSubmitStatus({ success: true, error: false, message: 'Successfully registered veteran' })
     } catch {
-      setSubmitStatus({ success: false, error: true, message: "Registration failed. Please try again." })
-      toast({ title: "Error", description: "Registration failed." })
-    } finally {
-      setLoading(false)
+      toast({ title: 'Error', description: 'Registration failed', variant: 'destructive' })
+      setSubmitStatus({ success: false, error: true, message: 'Failed to register veteran' })
     }
-  }
+  }, [form, requiredFields, toast])
 
-  const steps = [
-    "Service Information",
-    "Personal Information",
-    "Address Information",
-    (form.veteranType === "VEER_NARI" || form.veteranType === "WIDOW") ? "Martyr Information" : "Child Details",
-    (form.veteranType === "VEER_NARI" || form.veteranType === "WIDOW") ? "Child Details" : "Review & Submit",
-  ]
+  // Field rendering helper
+  const renderField = useCallback((fieldName: string) => {
+    const value = fieldName.includes('.')
+        ? form[fieldName.split('.')[0]]?.[fieldName.split('.')[1]] || ''
+        : form[fieldName] ?? '';
 
-  // Step renderers (use shadcn/ui components for consistency)
-  const renderStepContent = (step: number) => {
-    switch (step) {
-      case 0:
-        return (
-            <Card className="mb-6 p-4">
-              <div className="font-semibold text-lg mb-2 text-primary">Service Information</div>
-              <Separator className="mb-4" />
-                  {/*<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">*/}
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+    const labelText = fieldName.replace(/([A-Z])/g, ' $1').trim();
 
-                    <div>
-                  <Label>Service Number</Label>
-                  <Input name="serviceNumber" value={form.serviceNumber} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Service</Label>
-                  <Select
-                      value={form.services}
-                      onValueChange={(v) => setForm((f) => ({ ...f, services: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.services.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <Select
-                      value={form.category}
-                      onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.categories.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Veteran Type</Label>
-                  <Select
-                      value={form.veteranType}
-                      onValueChange={(v) => setForm((f) => ({ ...f, veteranType: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Veteran Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.veteranTypes.map((vt) => (
-                          <SelectItem key={vt} value={vt}>
-                            {vt}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Rank</Label>
-                  <Select
-                      value={form.rank}
-                      onValueChange={(v) => setForm((f) => ({ ...f, rank: v }))}
-                      disabled={loading || !form.services || !form.category}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Rank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.ranks.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {r}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!form.services || !form.category ? (
-                      <div className="text-xs text-muted-foreground mt-1">Select service and category first</div>
-                  ) : null}
-                </div>
-                <div>
-                  <Label>District</Label>
-                  <Select
-                      value={form.district}
-                      onValueChange={(v) => setForm((f) => ({ ...f, district: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select District" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.districts.map((d) => (
-                          <SelectItem key={d} value={d}>
-                            {d}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Regiment</Label>
-                  <Select
-                      value={form.regiment}
-                      onValueChange={(v) => setForm((f) => ({ ...f, regiment: v }))}
-                      disabled={loading || !form.services}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Regiment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.regiments.map((d) => (
-                          <SelectItem key={d} value={d}>
-                            {d}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {!form.services ? <div className="text-xs text-muted-foreground mt-1">Select service first</div> : null}
-                </div>
-                <div>
-                  <Label>Unit</Label>
-                  <Input name="unit" value={form.unit} onChange={handleChange} />
-                </div>
-                <div>
-                  <Label>Award</Label>
-                  <Select
-                      value={form.award}
-                      onValueChange={(v) => setForm((f) => ({ ...f, award: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Award" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.awards.map((a) => (
-                          <SelectItem key={a} value={a}>
-                            {a}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Date of Commissioning</Label>
-                  <Input
-                      name="dateOfCommissioning"
-                      type="date"
-                      value={form.dateOfCommissioning}
-                      onChange={handleChange}
-                  />
-                </div>
-                <div>
-                  <Label>Date of Retirement</Label>
-                  <Input name="dateOfRetirement" type="date" value={form.dateOfRetirement} onChange={handleChange} />
-                </div>
-              </div>
-            </Card>
-        )
-      case 1:
-        return (
-            <Card className="mb-6 p-4">
-              <div className="font-semibold text-lg mb-2 text-primary">Personal Information</div>
-              <Separator className="mb-4" />
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <Label>First Name</Label>
-                  <Input name="firstName" value={form.firstName} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Middle Name</Label>
-                  <Input name="middleName" value={form.middleName} onChange={handleChange} />
-                </div>
-                <div>
-                  <Label>Last Name</Label>
-                  <Input name="lastName" value={form.lastName} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Date of Birth</Label>
-                  <Input name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleChange} />
-                </div>
-                <div>
-                  <Label>Age</Label>
-                  <Input name="age" type="number" value={form.age} onChange={handleChange} />
-                </div>
-                <div>
-                  <Label>Mobile Number</Label>
-                  <Input name="mobileNumber" value={form.mobileNumber} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input name="email" type="email" value={form.email} onChange={handleChange} required />
-                </div>
-              </div>
-            </Card>
-        )
-      case 2:
-        return (
-            <Card className="mb-6 p-4">
-              <div className="font-semibold text-lg mb-2 text-primary">Address Information</div>
-              <Separator className="mb-4" />
-              <div className="font-medium mb-2 mt-2">Present Address</div>
-              {/*<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">*/}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="sm:col-span-2">
-                  <Label>Present Address</Label>
-                  <Input name="presentAddress" value={form.presentAddress} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Present District</Label>
-                  <Select
-                      value={form.presentDistrict}
-                      onValueChange={(v) => setForm((f) => ({ ...f, presentDistrict: v }))}
-                      disabled={loading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select District" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.districts.map((d) => (
-                          <SelectItem key={d} value={d}>
-                            {d}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Present State</Label>
-                  <Input name="presentState" value={form.presentState} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Present City</Label>
-                  <Input name="presentCity" value={form.presentCity} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Present Post Office</Label>
-                  <Input name="presentPostOffice" value={form.presentPostOffice} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Present Police Station</Label>
-                  <Input name="presentPoliceStation" value={form.presentPoliceStation} onChange={handleChange} required />
-                </div>
-                <div>
-                  <Label>Present Pin Code</Label>
-                  <Input name="presentPinCode" value={form.presentPinCode} onChange={handleChange} required />
-                </div>
-              </div>
-              <div className="my-4">
-                <Checkbox
-                    checked={form.isPermanentAddressSameAsPresent}
-                    onCheckedChange={(v) => handleCheckboxChange(!!v, "isPermanentAddressSameAsPresent")}
-                >
-                  Permanent address same as present
-                </Checkbox>
-              </div>
-              <div className="font-medium mb-2 mt-2">Permanent Address</div>
-              {/*<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">*/}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div className="sm:col-span-2">
-                  <Label>Permanent Address</Label>
-                  <Input
-                      name="permanentAddress"
-                      value={form.permanentAddress}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-                <div>
-                  <Label>Permanent District</Label>
-                  <Select
-                      value={form.permanentDistrict}
-                      onValueChange={(v) => setForm((f) => ({ ...f, permanentDistrict: v }))}
-                      disabled={loading || form.isPermanentAddressSameAsPresent}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select District" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {enums.districts.map((d) => (
-                          <SelectItem key={d} value={d}>
-                            {d}
-                          </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Permanent State</Label>
-                  <Input
-                      name="permanentState"
-                      value={form.permanentState}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-                <div>
-                  <Label>Permanent City</Label>
-                  <Input
-                      name="permanentCity"
-                      value={form.permanentCity}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-                <div>
-                  <Label>Permanent Post Office</Label>
-                  <Input
-                      name="permanentPostOffice"
-                      value={form.permanentPostOffice}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-                <div>
-                  <Label>Permanent Police Station</Label>
-                  <Input
-                      name="permanentPoliceStation"
-                      value={form.permanentPoliceStation}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-                <div>
-                  <Label>Permanent Pin Code</Label>
-                  <Input
-                      name="permanentPinCode"
-                      value={form.permanentPinCode}
-                      onChange={handleChange}
-                      required
-                      disabled={form.isPermanentAddressSameAsPresent}
-                  />
-                </div>
-              </div>
-            </Card>
-        )
-      case 3:
-        if (form.veteranType === "VEER_NARI" || form.veteranType === "WIDOW") {
-          return (
-              <Card className="mb-6 p-4">
-                <div className="font-semibold text-lg mb-2 text-primary">Martyr Information</div>
-                <Separator className="mb-4" />
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Veer Nari Name</Label>
-                    <Input name="veerNariName" value={form.veerNariName} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <Label>Veer Nari Mobile</Label>
-                    <Input name="veerNariMobileNumber" value={form.veerNariMobileNumber} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <Label>Year of Martyrdom</Label>
-                    <Input name="yearOfMartydom" type="number" value={form.yearOfMartydom} onChange={handleChange} />
-                  </div>
-                  <div>
-                    <Label>Place of Martyrdom</Label>
-                    <Input name="placeOfMartydom" value={form.placeOfMartydom} onChange={handleChange} />
-                  </div>
-                </div>
-              </Card>
-          )
-        } else {
-          return renderChildDetails()
-        }
-      case 4:
-        if (form.veteranType === "VEER_NARI" || form.veteranType === "WIDOW") {
-          return renderChildDetails()
-        } else {
-          return renderReviewSection()
-        }
-      case 5:
-        return renderReviewSection()
-      default:
-        return null
+    if (fieldName === 'isPermanentAddressSameAsPresent' || fieldName === 'battleCasualty') {
+      return (
+          <div key={fieldName} className="flex items-center">
+            <input
+                type="checkbox"
+                id={fieldName}
+                checked={!!value}
+                onChange={e => setField(fieldName, e.target.checked)}
+                className="mr-2"
+            />
+            <label htmlFor={fieldName}>{labelText}</label>
+          </div>
+      );
     }
-  }
 
-  function renderChildDetails() {
+    // Dropdown fields
+    if (fieldName === 'services') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+            >
+              <option value="">-- Select Service --</option>
+              {services.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+      );
+    }
+
+    if (fieldName === 'category') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+            >
+              <option value="">-- Select Category --</option>
+              {categories.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+      );
+    }
+
+    if (fieldName === 'rank') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+                disabled={!form.services || !form.category}
+            >
+              <option value="">-- Select Rank --</option>
+              {ranks.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            {!form.services && <p className="text-xs text-gray-500 mt-1">Select a service first</p>}
+            {form.services && !form.category && <p className="text-xs text-gray-500 mt-1">Select a category first</p>}
+          </div>
+      );
+    }
+
+    if (fieldName === 'regiment') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+                disabled={!form.services}
+            >
+              <option value="">-- Select Regiment --</option>
+              {regiments.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            {!form.services && <p className="text-xs text-gray-500 mt-1">Select a service first</p>}
+          </div>
+      );
+    }
+
+    if (fieldName === 'unit') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+                disabled={!form.services || !form.regiment}
+            >
+              <option value="">-- Select Unit --</option>
+              {units.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            {!form.services && <p className="text-xs text-gray-500 mt-1">Select a service first</p>}
+            {form.services && !form.regiment && <p className="text-xs text-gray-500 mt-1">Select a regiment first</p>}
+          </div>
+      );
+    }
+
+    if (fieldName === 'award') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+            >
+              <option value="">-- Select Award --</option>
+              {awards.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+      );
+    }
+
+    if (fieldName === 'presentState' || fieldName === 'permanentState') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+            >
+              <option value="">-- Select State --</option>
+              {states.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+      );
+    }
+
+    if (fieldName === 'presentDistrict') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+                disabled={!form.presentState}
+            >
+              <option value="">-- Select District --</option>
+              {presentDistricts.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            {!form.presentState && <p className="text-xs text-gray-500 mt-1">Select a state first</p>}
+          </div>
+      );
+    }
+
+    if (fieldName === 'permanentDistrict') {
+      return (
+          <div key={fieldName} className="mb-4">
+            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+            <select
+                id={fieldName}
+                value={value}
+                onChange={e => setField(fieldName, e.target.value)}
+                className="p-2 border rounded w-full"
+                disabled={!form.permanentState}
+            >
+              <option value="">-- Select District --</option>
+              {permanentDistricts.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            {!form.permanentState && <p className="text-xs text-gray-500 mt-1">Select a state first</p>}
+          </div>
+      );
+    }
+
+    // Default input fields
     return (
-        <Card className="mb-6 p-4">
-          <div className="flex justify-between items-center mb-2">
-            <div className="font-semibold text-lg text-primary">Child Details</div>
-            <Button variant="default" onClick={handleAddChild} size="sm">
-              Add Child
-            </Button>
-          </div>
-          <Separator className="mb-4" />
-          {form.children.length === 0 && (
-              <div className="text-center text-muted-foreground my-4">
-                No children added yet. Click "Add Child" to add details.
-              </div>
-          )}
-          {form.children.map((child, idx) => (
-              <div key={idx} className="mb-4 p-3 border rounded">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="font-medium">Child #{idx + 1}</div>
-                  <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveChild(idx)}
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                  >
-                    ✕
-                  </Button>
-                </div>
+        <div key={fieldName} className="mb-4">
+          <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+          <input
+              type={fieldName.includes('date') ? 'date' :
+                  fieldName.includes('email') ? 'email' :
+                      fieldName.includes('mobile') || fieldName.includes('Number') || fieldName === 'age' ? 'number' : 'text'}
+              id={fieldName}
+              value={value}
+              onChange={e => setField(fieldName, e.target.value)}
+              className="p-2 border rounded w-full"
+          />
+        </div>
+    );
+  }, [form, setField, services, ranks, categories, regiments, units, awards, states, presentDistricts, permanentDistricts]);
 
-
-
-
-
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  <div>
-                    <Label>Child Name</Label>
-                    <Input name="childName" value={child.childName} onChange={(e) => handleChildChange(idx, e)} />
-                  </div>
-                  <div>
-                    <Label>Relation</Label>
-                    <Input name="childRelation" value={child.childRelation} onChange={(e) => handleChildChange(idx, e)} />
-                  </div>
-                  <div>
-                    <Label>Date of Birth</Label>
-                    <Input
-                        name="childDateOfBirth"
-                        type="date"
-                        value={child.childDateOfBirth}
-                        onChange={(e) => handleChildChange(idx, e)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Age</Label>
-                    <Input
-                        name="childAge"
-                        type="number"
-                        value={child.childAge}
-                        onChange={(e) => handleChildChange(idx, e)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Education</Label>
-                    <Input
-                        name="childEducationQualification"
-                        value={child.childEducationQualification}
-                        onChange={(e) => handleChildChange(idx, e)}
-                    />
-                  </div>
-                </div>
-              </div>
-          ))}
-        </Card>
-    )
-  }
-
-  function renderReviewSection() {
-    return (
-        <Card className="mb-6 p-4">
-          <div className="font-semibold text-lg mb-2 text-primary">Review Your Information</div>
-          <Separator className="mb-4" />
-          <div className="mb-2">
-            Please review all the information you've provided before submitting. Once submitted, you may need to contact
-            support to make changes.
-          </div>
-          <div className="font-medium mt-4 mb-2">Service Information</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div>
-              <div className="text-xs text-muted-foreground">Service Number:</div>
-              <div>{form.serviceNumber || "Not provided"}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Service:</div>
-              <div>{form.services || "Not provided"}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Rank:</div>
-              <div>{form.rank || "Not provided"}</div>
-            </div>
-          </div>
-          <div className="font-medium mt-4 mb-2">Personal Information</div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="sm:col-span-2">
-              <div className="text-xs text-muted-foreground">Name:</div>
-              <div>{`${form.firstName || ""} ${form.middleName || ""} ${form.lastName || ""}`}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Mobile:</div>
-              <div>{form.mobileNumber || "Not provided"}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground">Email:</div>
-              <div>{form.email || "Not provided"}</div>
-            </div>
-          </div>
-          <div className="mt-4">
-            <Checkbox checked disabled>
-              I confirm that all the information provided is accurate and complete.
-            </Checkbox>
-          </div>
-        </Card>
-    )
-  }
-
+  // Render
   return (
       <div className="flex flex-col">
         <Header />
-        {/*<main className="container mx-auto flex-1 py-8 space-y-6">*/}
-        {/*  <h1 className="text-3xl font-bold tracking-tight">Veteran Registration</h1>*/}
-        <div className="max-w-4xl mx-auto py-8 px-2">
-          <Card className="p-4 md:p-8 mt-6 rounded-lg shadow-lg min-h-[600px]">
-            <div className="text-2xl md:text-3xl font-bold text-center text-primary mb-6">Veteran Registration</div>
+        <div className="max-w-4xl mx-auto p-4">
+          <Card className="p-6 shadow-lg">
+            <h1 className="text-3xl font-bold text-center mb-6">Veteran Registration</h1>
+
             {submitStatus.success && (
-                <Alert
-                    variant="default"
-                    className="mb-4 border-green-500 bg-green-50 text-green-800"
-                >
-                  {submitStatus.message}
+                <Alert className="mb-4">
+                  <AlertDescription>{submitStatus.message}</AlertDescription>
                 </Alert>
             )}
+
             {submitStatus.error && (
                 <Alert variant="destructive" className="mb-4">
-                  {submitStatus.message}
+                  <AlertDescription>{submitStatus.message}</AlertDescription>
                 </Alert>
             )}
-            <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-              {steps.map((label, idx) => (
-                  <div
-                      key={label}
-                      className={`flex-1 flex items-center gap-2 ${activeStep === idx ? "font-bold text-primary" : "text-muted-foreground"}`}
-                  >
-                    <div
-                        className={`rounded-full w-7 h-7 flex items-center justify-center border ${activeStep === idx ? "bg-primary text-white" : "bg-muted"}`}
-                    >
-                      {idx + 1}
+
+            <div className="space-y-6">
+              {/* Veteran Type Selection */}
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold mb-3">Veteran Type</h2>
+                <select
+                    className="p-2 border rounded w-full"
+                    disabled={loadingTypes}
+                    value={form.veteranType || ''}
+                    onChange={e => setField('veteranType', e.target.value)}
+                >
+                  <option value="">-- Select Veteran Type --</option>
+                  {veteranTypes.map((t: string) => (
+                      <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {loadingFields && <div className="text-center py-4">Loading form fields...</div>}
+
+              {/* Field Categories */}
+              {!loadingFields && fieldCategories.map((category) => (
+                  <div key={category.category} className="border p-4 rounded mb-6">
+                    <h2 className="text-xl font-semibold mb-4">{category.category}</h2>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                      {category.fields.map(fieldName => renderField(fieldName))}
                     </div>
-                    <span className="hidden md:inline text-xs">{label}</span>
-                    {idx < steps.length - 1 && <div className="flex-1 h-px bg-muted" />}
                   </div>
               ))}
+
+              {/* Submit Button */}
+              <div className="flex justify-end mt-6">
+                <Button onClick={handleSubmit} disabled={loadingFields}>Submit Registration</Button>
+              </div>
             </div>
-            {loading && activeStep === 0 ? (
-                <div className="flex justify-center items-center min-h-[500px]">
-                  <span className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full block" />
-                </div>
-            ) : (
-                <form onSubmit={handleSubmit} className="flex flex-col min-h-[500px]">
-                  <div className="flex-grow">{renderStepContent(activeStep)}</div>
-                  <div className="flex justify-between mt-auto pt-6">
-                    <Button type="button" variant="outline" disabled={activeStep === 0} onClick={handleBack}>
-                      Back
-                    </Button>
-                    <div>
-                      {activeStep === steps.length - 1 ? (
-                          <Button type="submit" variant="default" disabled={loading} className="min-w-[120px]">
-                            {loading ? (
-                                <span className="animate-spin w-5 h-5 border-2 border-primary border-t-transparent rounded-full inline-block" />
-                            ) : (
-                                "Submit"
-                            )}
-                          </Button>
-                      ) : (
-                          <Button type="button" variant="default" onClick={handleNext} className="min-w-[120px]">
-                            Next
-                          </Button>
-                      )}
-                    </div>
-                  </div>
-                </form>
-            )}
           </Card>
         </div>
-        {/*</main>*/}
-
         <Footer />
       </div>
   )
