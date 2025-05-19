@@ -9,6 +9,7 @@ import { MarqueeAnnouncement } from "@/components/marquee-announcement"
 import { HeroCarousel } from "@/components/hero-carousel"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import COASSection from "@/components/COASSection"
 
 
 export default function Home() {
@@ -89,6 +90,10 @@ export default function Home() {
           <div className="mt-8">
             <FacilitiesSection />
           </div>
+
+          <div className="mt-8">
+            <COASSection />
+            </div>
 
           <div className="mt-8">
             <SupportersSection />
