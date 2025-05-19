@@ -115,14 +115,6 @@ export default function RegisterPage() {
     enabled: !!form.services
   })
 
-  // Fetch units based on selected regiment
-  const { data: units = [] } = useQuery<string[]>({
-    queryKey: ["units", form.services, form.regiment],
-    queryFn: () => fetch(`/api/units?service=${form.services}&regiment=${form.regiment}`)
-        .then(res => res.json()),
-    enabled: !!form.services && !!form.regiment
-  })
-
   // Fetch states (use the existing districts method which likely returns states too)
   const { data: states = [] } = useQuery<string[]>({
     queryKey: ["states"],
@@ -313,25 +305,21 @@ export default function RegisterPage() {
       );
     }
 
-    if (fieldName === 'unit') {
+   if (fieldName === 'unit') {
       return (
-          <div key={fieldName} className="mb-4">
-            <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
-            <select
-                id={fieldName}
-                value={value}
-                onChange={e => setField(fieldName, e.target.value)}
-                className="p-2 border rounded w-full"
-                disabled={!form.services || !form.regiment}
-            >
-              <option value="">-- Select Unit --</option>
-              {units.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-              ))}
-            </select>
-            {!form.services && <p className="text-xs text-gray-500 mt-1">Select a service first</p>}
-            {form.services && !form.regiment && <p className="text-xs text-gray-500 mt-1">Select a regiment first</p>}
-          </div>
+        <div key={fieldName} className="mb-4">
+          <label htmlFor={fieldName} className="block text-sm font-medium mb-1">{labelText}</label>
+          <input
+            type="text"
+            id={fieldName}
+            value={value}
+            onChange={e => setField(fieldName, e.target.value)}
+            className="p-2 border rounded w-full"
+            disabled={!form.services || !form.regiment}
+          />
+          {!form.services && <p className="text-xs text-gray-500 mt-1">Select a service first</p>}
+          {form.services && !form.regiment && <p className="text-xs text-gray-500 mt-1">Select a regiment first</p>}
+        </div>
       );
     }
 
@@ -430,7 +418,7 @@ export default function RegisterPage() {
           />
         </div>
     );
-  }, [form, setField, services, ranks, categories, regiments, units, awards, states, presentDistricts, permanentDistricts]);
+  }, [form, setField, services, ranks, categories, regiments, awards, states, presentDistricts, permanentDistricts]);
 
   // Render
   return (
