@@ -7,7 +7,7 @@ export function Header() {
         <div className="flex flex-col">
             {/* Top Helpline Bar */}
             <div className="bg-[#004d00] text-white text-sm py-2 px-4">
-                <div className="container mx-auto">
+                {/*<div className="flex container mx-auto">*/}
                     <div className="flex flex-col md:flex-row justify-center gap-2 text-center md:text-left">
                         <div className="flex items-center justify-center md:justify-start gap-1">
                             <span>👨‍👩‍👧 Family Pensioner Helpline: 01125664100, WhatsApp: 9910640067, E-Mail:</span>
@@ -23,7 +23,7 @@ export function Header() {
                         </div>
                     </div>
                 </div>
-            </div>
+            {/*</div>*/}
 
             {/* Header with Logo and Title */}
             <header className="w-full bg-gradient-to-r from-green-300 via-yellow-100 to-green-300 py-4">
