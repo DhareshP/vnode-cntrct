@@ -77,7 +77,10 @@ export default function Home() {
               </div>
 
               <div className="p-3 flex justify-center">
-                <Image src="/qr-code.png" alt="QR Code" width={150} height={150} />
+                <p className="text-sm">
+                  Scan to download the official seva app
+                </p>
+                <Image src="/qr.png" alt="QR Code" width={150} height={150} />
               </div>
             </div>
           </div>
