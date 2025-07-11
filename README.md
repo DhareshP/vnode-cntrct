@@ -14,7 +14,7 @@ Any changes you make to your deployed app will be automatically pushed to this r
 
 Your project is live at:
 
-**[https://vercel.com/dareshs-projects/v0-indian-army-veterans-clone](https://vercel.com/dareshs-projects/v0-indian-army-veterans-clone)**
+**https://vnode.vercel.app**
 
 ## Build your app
 
